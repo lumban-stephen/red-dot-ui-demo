@@ -191,14 +191,13 @@
             border-radius: 1.5rem;
             overflow: auto;
             background: #0b0f19;
-            display: flex;
-            justify-content: center;
             min-height: 500px;
-            max-height: 60vh;
+            max-height: 70vh;
             border: 2px solid rgba(255, 255, 255, 0.05);
             scrollbar-width: thin;
             scrollbar-color: var(--primary) transparent;
             box-shadow: inset 0 0 40px rgba(0,0,0,0.5);
+            display: block; /* Use block for standard overflow scrolling */
         }
 
         .visualizer::-webkit-scrollbar {
@@ -213,14 +212,16 @@
 
         .image-wrapper {
             position: relative;
-            display: inline-block;
-            margin: auto;
+            display: block;
+            margin: 0 auto;
+            width: max-content; /* Critical for matching canvas/image width when scrolling */
         }
 
         #uploadedImage {
             max-width: none;
             display: block;
-            image-rendering: high-quality;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
         }
 
         #canvas {
@@ -228,6 +229,7 @@
             top: 0;
             left: 0;
             pointer-events: auto;
+            z-index: 10;
         }
 
         /* Gallery */
@@ -481,7 +483,7 @@
 
     <div class="loading" id="loading">
         <div class="spinner"></div>
-        <span style="color: white; font-weight: 600; letter-spacing: 0.05em;">PROCESSING NEURAL NETWORKS...</span>
+        <span style="color: white; font-weight: 600; letter-spacing: 0.05em;">PROCESSING INFERENCE...</span>
     </div>
 
     <script>
@@ -531,11 +533,20 @@
 
         function resizeCanvas() {
             if (!uploadedImage.naturalWidth) return;
+            
+            // 1. Set internal coordinate resolution to match original image
             canvas.width = uploadedImage.naturalWidth;
             canvas.height = uploadedImage.naturalHeight;
-            canvas.style.width = uploadedImage.offsetWidth + 'px';
-            canvas.style.height = uploadedImage.offsetHeight + 'px';
-            renderAll();
+            
+            // 2. Match visual size to how image is currently rendered
+            // Using a slight delay to ensure browser layout has settled
+            requestAnimationFrame(() => {
+                const w = uploadedImage.clientWidth || uploadedImage.naturalWidth;
+                const h = uploadedImage.clientHeight || uploadedImage.naturalHeight;
+                canvas.style.width = w + 'px';
+                canvas.style.height = h + 'px';
+                renderAll();
+            });
         }
 
         function renderAll() {
@@ -701,30 +712,31 @@
                 const height = y2 - y1;
                 
                 // Color based on confidence
-                const hue = d.confidence * 120; // 0 is red, 120 is green
-                const color = `hsl(${hue}, 80%, 60%)`;
-                const shadowColor = `hsla(${hue}, 80%, 60%, 0.5)`;
+                const hue = Math.pow(d.confidence, 2) * 120; // Squared for better color distribution
+                const color = `hsl(${hue}, 100%, 60%)`;
+                const shadowColor = `hsla(${hue}, 100%, 60%, 0.6)`;
+
+                // Draw semi-transparent fill first
+                ctx.fillStyle = `hsla(${hue}, 100%, 60%, 0.15)`;
+                ctx.fillRect(x1, y1, width, height);
 
                 // Draw glow
-                ctx.shadowBlur = 10;
+                ctx.shadowBlur = 15;
                 ctx.shadowColor = shadowColor;
                 
                 // Main box
                 ctx.strokeStyle = color;
-                ctx.lineWidth = 4;
+                ctx.lineWidth = Math.max(2, (canvas.width / 1000) * 3); // Scale line width based on resolution
                 ctx.lineJoin = 'round';
                 ctx.strokeRect(x1, y1, width, height);
 
-                // Semi-transparent fill
-                ctx.fillStyle = `hsla(${hue}, 80%, 60%, 0.1)`;
-                ctx.fillRect(x1, y1, width, height);
-
-                // Reset shadow for corners
+                // Reset shadow for corners and text
                 ctx.shadowBlur = 0;
                 
                 // Thick corners
-                ctx.lineWidth = 10;
-                const cornerLen = Math.min(width, height) * 0.2;
+                const cornerWeight = ctx.lineWidth * 3;
+                ctx.lineWidth = cornerWeight;
+                const cornerLen = Math.min(width, height, 50) * 0.3;
                 
                 // Top Left
                 ctx.beginPath(); ctx.moveTo(x1, y1 + cornerLen); ctx.lineTo(x1, y1); ctx.lineTo(x1 + cornerLen, y1); ctx.stroke();
@@ -736,15 +748,19 @@
                 ctx.beginPath(); ctx.moveTo(x2 - cornerLen, y2); ctx.lineTo(x2, y2); ctx.lineTo(x2, y2 + cornerLen); ctx.stroke();
 
                 // Confidence Label
-                ctx.fillStyle = color;
+                const fontSize = Math.max(16, Math.round(canvas.width / 60));
+                ctx.font = `bold ${fontSize}px 'Inter', sans-serif`;
                 const label = `${(d.confidence * 100).toFixed(0)}%`;
-                ctx.font = 'bold 24px Inter, sans-serif';
+                const labelPadding = fontSize / 3;
                 const labelWidth = ctx.measureText(label).width;
                 
                 // Label background
-                ctx.fillRect(x1, y1 - 35, labelWidth + 10, 35);
+                ctx.fillStyle = color;
+                ctx.fillRect(x1, y1 - fontSize - labelPadding * 2, labelWidth + labelPadding * 2, fontSize + labelPadding * 2);
+                
+                // Label text
                 ctx.fillStyle = 'white';
-                ctx.fillText(label, x1 + 5, y1 - 10);
+                ctx.fillText(label, x1 + labelPadding, y1 - labelPadding - 4);
             });
         }
 
