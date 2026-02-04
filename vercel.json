@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/detect",
+      "destination": "/api/detect.py"
+    }
+  ]
+}

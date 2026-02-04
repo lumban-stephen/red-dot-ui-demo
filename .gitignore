@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.env
+
+# Root Python files (Exclude the local app.py)
+/app.py
+
+# Models (Large files)
+*.pt
+*.pth
+*.onnx
+
+# Test data
+test_images/
+
+# IDEs and Tools
+.vscode/
+.idea/
+.DS_Store
+.agent/
+
+# Vercel
+.vercel
