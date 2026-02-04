@@ -178,29 +178,180 @@
         }
 
         /* Visualizer */
+        .visualizer-container {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            width: 100%;
+        }
+
         .visualizer {
             position: relative;
             width: 100%;
-            border-radius: 1rem;
-            overflow: hidden;
-            background: #000;
+            border-radius: 1.5rem;
+            overflow: auto;
+            background: #0b0f19;
             display: flex;
             justify-content: center;
-            min-height: 400px;
+            min-height: 500px;
+            max-height: 60vh;
+            border: 2px solid rgba(255, 255, 255, 0.05);
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary) transparent;
+            box-shadow: inset 0 0 40px rgba(0,0,0,0.5);
+        }
+
+        .visualizer::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        .visualizer::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 4px;
+        }
+
+        .image-wrapper {
+            position: relative;
+            display: inline-block;
+            margin: auto;
         }
 
         #uploadedImage {
-            max-width: 100%;
-            height: auto;
+            max-width: none;
             display: block;
+            image-rendering: high-quality;
         }
 
         #canvas {
             position: absolute;
             top: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            pointer-events: auto; /* Enable for tooltips */
+            left: 0;
+            pointer-events: auto;
+        }
+
+        /* Gallery */
+        .gallery-section {
+            display: none;
+            flex-direction: column;
+            gap: 1rem;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .gallery-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 0.5rem;
+        }
+
+        .gallery-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #f8fafc;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .gallery-scroll {
+            display: flex;
+            gap: 1rem;
+            overflow-x: auto;
+            padding: 1rem 0.5rem;
+            scrollbar-width: none;
+            scroll-behavior: smooth;
+            -ms-overflow-style: none;
+        }
+
+        .gallery-scroll::-webkit-scrollbar {
+            display: none;
+        }
+
+        .crop-card {
+            flex: 0 0 160px;
+            aspect-ratio: 1;
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: 1rem;
+            border: 2px solid rgba(255, 255, 255, 0.05);
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .crop-card:hover {
+            transform: translateY(-8px) scale(1.05);
+            border-color: var(--primary);
+            box-shadow: 0 15px 30px -10px rgba(99, 102, 241, 0.4);
+        }
+
+        .crop-card.active {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .crop-img-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #000;
+            overflow: hidden;
+        }
+
+        .crop-img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .crop-info {
+            padding: 0.5rem;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(4px);
+            font-size: 0.75rem;
+            text-align: center;
+            font-weight: 600;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Filter UI */
+        .filter-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.5rem 1rem;
+            border-radius: 0.75rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 150px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--primary);
+            border-radius: 50%;
+            border: 2px solid white;
         }
 
         /* Tooltip */
@@ -290,12 +441,33 @@
                 <button class="btn btn-primary" id="detectBtn" disabled>
                     ⚡ Run Detection
                 </button>
+                
+                <div class="filter-container">
+                    <span style="font-size: 0.8rem; color: #94a3b8; font-weight: 600;">CONFIDENCE:</span>
+                    <input type="range" id="confSlider" min="0" max="100" value="30">
+                    <span id="confValue" style="min-width: 2.5rem; font-weight: 700; color: var(--primary);">30%</span>
+                </div>
+
                 <span class="file-name" id="fileName" style="color: #94a3b8; font-size: 0.9rem;"></span>
             </div>
 
-            <div class="visualizer" id="imageContainer" style="display: none;">
-                <img id="uploadedImage" alt="Analysis Target">
-                <canvas id="canvas"></canvas>
+            <div class="visualizer-container">
+                <div class="visualizer" id="imageContainer" style="display: none;">
+                    <div class="image-wrapper" id="imageWrapper">
+                        <img id="uploadedImage" alt="Analysis Target">
+                        <canvas id="canvas"></canvas>
+                    </div>
+                </div>
+
+                <div class="gallery-section" id="gallerySection">
+                    <div class="gallery-header">
+                        <h3 class="gallery-title">🔍 Detections Gallery</h3>
+                        <span style="color: #94a3b8; font-size: 0.8rem;">Click an item to focus</span>
+                    </div>
+                    <div class="gallery-scroll" id="galleryScroll">
+                        <!-- Crops injected here -->
+                    </div>
+                </div>
             </div>
             
             <div id="placeholder" style="text-align: center; padding: 4rem; color: #475569;">
@@ -320,8 +492,17 @@
         const tooltip = document.getElementById('tooltip');
         const placeholder = document.getElementById('placeholder');
 
-        let selectedFile = null;
-        let lastDetections = [];
+        const confSlider = document.getElementById('confSlider');
+        const confValue = document.getElementById('confValue');
+        let currentThreshold = 0.3;
+
+        confSlider.addEventListener('input', (e) => {
+            currentThreshold = e.target.value / 100;
+            confValue.textContent = `${e.target.value}%`;
+            if (lastDetections.length > 0) {
+                renderAll();
+            }
+        });
 
         fileInput.addEventListener('change', (e) => {
             selectedFile = e.target.files[0];
@@ -344,19 +525,103 @@
             }
         });
 
+        const gallerySection = document.getElementById('gallerySection');
+        const galleryScroll = document.getElementById('galleryScroll');
+        const imageWrapper = document.getElementById('imageWrapper');
+
         function resizeCanvas() {
-            canvas.width = uploadedImage.offsetWidth;
-            canvas.height = uploadedImage.offsetHeight;
-            const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (!uploadedImage.naturalWidth) return;
+            canvas.width = uploadedImage.naturalWidth;
+            canvas.height = uploadedImage.naturalHeight;
+            canvas.style.width = uploadedImage.offsetWidth + 'px';
+            canvas.style.height = uploadedImage.offsetHeight + 'px';
+            renderAll();
+        }
+
+        function renderAll() {
+            if (!lastDetections.length) return;
+            const detections = lastDetections.filter(d => d.confidence >= currentThreshold);
+            drawBoundingBoxes(detections);
+            updateKPIs(detections);
+            updateGallery(detections);
+        }
+
+        function updateGallery(detections) {
+            galleryScroll.innerHTML = '';
+            if (detections.length > 0) {
+                gallerySection.style.display = 'flex';
+                
+                detections.forEach((d, index) => {
+                    const card = createCropCard(d, index);
+                    galleryScroll.appendChild(card);
+                });
+            } else {
+                gallerySection.style.display = 'none';
+            }
+        }
+
+        function createCropCard(detection, index) {
+            const [x1, y1, x2, y2] = detection.bbox;
+            const w = x2 - x1;
+            const h = y2 - y1;
+            
+            // Create a temporary canvas to extract the crop
+            const cropCanvas = document.createElement('canvas');
+            const padding = 20; // Add some context around the object
+            const cx1 = Math.max(0, x1 - padding);
+            const cy1 = Math.max(0, y1 - padding);
+            const cw = Math.min(uploadedImage.naturalWidth - cx1, w + padding * 2);
+            const ch = Math.min(uploadedImage.naturalHeight - cy1, h + padding * 2);
+            
+            cropCanvas.width = cw;
+            cropCanvas.height = ch;
+            const ctx = cropCanvas.getContext('2d');
+            ctx.drawImage(uploadedImage, cx1, cy1, cw, ch, 0, 0, cw, ch);
+            
+            const card = document.createElement('div');
+            card.className = 'crop-card';
+            card.innerHTML = `
+                <div class="crop-img-container">
+                    <img src="${cropCanvas.toDataURL()}" class="crop-img">
+                </div>
+                <div class="crop-info">
+                    <span style="color: ${getConfidenceColor(detection.confidence)}">
+                        ${(detection.confidence * 100).toFixed(0)}% Match
+                    </span>
+                </div>
+            `;
+            
+            card.onclick = () => {
+                document.querySelectorAll('.crop-card').forEach(c => c.classList.remove('active'));
+                card.classList.add('active');
+                scrollToDetection(detection);
+            };
+            
+            return card;
+        }
+
+        function getConfidenceColor(conf) {
+            const hue = conf * 120;
+            return `hsl(${hue}, 80%, 60%)`;
+        }
+
+        function scrollToDetection(detection) {
+            const [x1, y1, x2, y2] = detection.bbox;
+            const scale = uploadedImage.offsetWidth / uploadedImage.naturalWidth;
+            
+            const targetX = (x1 + (x2 - x1) / 2) * scale;
+            const targetY = (y1 + (y2 - y1) / 2) * scale;
+            
+            imageContainer.scrollTo({
+                left: targetX - imageContainer.offsetWidth / 2,
+                top: targetY - imageContainer.offsetHeight / 2,
+                behavior: 'smooth'
+            });
         }
 
         window.addEventListener('resize', () => {
             if (uploadedImage.src) {
                 resizeCanvas();
-                if (lastDetections.length > 0) {
-                    drawBoundingBoxes(lastDetections);
-                }
             }
         });
 
@@ -365,15 +630,14 @@
             if (!lastDetections.length) return;
 
             const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const x = (e.clientX - rect.left) * scaleX;
+            const y = (e.clientY - rect.top) * scaleY;
 
-            // Find detection under mouse
-            const scaleX = canvas.width / uploadedImage.naturalWidth;
-            const scaleY = canvas.height / uploadedImage.naturalHeight;
-
-            const hovered = lastDetections.find(d => {
-                const [x1, y1, x2, y2] = d.bbox.map((v, i) => v * (i % 2 === 0 ? scaleX : scaleY));
+            const filteredDetections = lastDetections.filter(d => d.confidence >= currentThreshold);
+            const hovered = filteredDetections.find(d => {
+                const [x1, y1, x2, y2] = d.bbox;
                 return x >= x1 && x <= x2 && y >= y1 && y <= y2;
             });
 
@@ -417,8 +681,7 @@
 
                 const data = await response.json();
                 lastDetections = data.detections;
-                drawBoundingBoxes(data.detections);
-                updateKPIs(data.detections);
+                renderAll();
                 kpiGrid.classList.add('active');
             } catch (error) {
                 alert('Analysis Error: ' + error.message);
@@ -432,29 +695,56 @@
             const ctx = canvas.getContext('2d');
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            const scaleX = canvas.width / uploadedImage.naturalWidth;
-            const scaleY = canvas.height / uploadedImage.naturalHeight;
-
             detections.forEach((d) => {
-                const [x1, y1, x2, y2] = d.bbox.map((v, i) => v * (i % 2 === 0 ? scaleX : scaleY));
-                const color = d.confidence > 0.8 ? '#4ade80' : d.confidence > 0.5 ? '#fbbf24' : '#f87171';
-
-                ctx.strokeStyle = color;
-                ctx.lineWidth = 2;
-                ctx.setLineDash([5, 5]);
-                ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+                const [x1, y1, x2, y2] = d.bbox;
+                const width = x2 - x1;
+                const height = y2 - y1;
                 
-                // Corners
-                ctx.setLineDash([]);
+                // Color based on confidence
+                const hue = d.confidence * 120; // 0 is red, 120 is green
+                const color = `hsl(${hue}, 80%, 60%)`;
+                const shadowColor = `hsla(${hue}, 80%, 60%, 0.5)`;
+
+                // Draw glow
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = shadowColor;
+                
+                // Main box
+                ctx.strokeStyle = color;
                 ctx.lineWidth = 4;
+                ctx.lineJoin = 'round';
+                ctx.strokeRect(x1, y1, width, height);
+
+                // Semi-transparent fill
+                ctx.fillStyle = `hsla(${hue}, 80%, 60%, 0.1)`;
+                ctx.fillRect(x1, y1, width, height);
+
+                // Reset shadow for corners
+                ctx.shadowBlur = 0;
+                
+                // Thick corners
+                ctx.lineWidth = 10;
+                const cornerLen = Math.min(width, height) * 0.2;
+                
                 // Top Left
-                ctx.beginPath(); ctx.moveTo(x1, y1 + 10); ctx.lineTo(x1, y1); ctx.lineTo(x1 + 10, y1); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(x1, y1 + cornerLen); ctx.lineTo(x1, y1); ctx.lineTo(x1 + cornerLen, y1); ctx.stroke();
                 // Top Right
-                ctx.beginPath(); ctx.moveTo(x2 - 10, y1); ctx.lineTo(x2, y1); ctx.lineTo(x2, y1 + 10); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(x2 - cornerLen, y1); ctx.lineTo(x2, y1); ctx.lineTo(x2, y1 + cornerLen); ctx.stroke();
                 // Bottom Left
-                ctx.beginPath(); ctx.moveTo(x1, y2 - 10); ctx.lineTo(x1, y2); ctx.lineTo(x1 + 10, y2); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(x1, y2 - cornerLen); ctx.lineTo(x1, y2); ctx.lineTo(x1 + cornerLen, y2); ctx.stroke();
                 // Bottom Right
-                ctx.beginPath(); ctx.moveTo(x2 - 10, y2); ctx.lineTo(x2, y2); ctx.lineTo(x2, y2 + 10); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(x2 - cornerLen, y2); ctx.lineTo(x2, y2); ctx.lineTo(x2, y2 + cornerLen); ctx.stroke();
+
+                // Confidence Label
+                ctx.fillStyle = color;
+                const label = `${(d.confidence * 100).toFixed(0)}%`;
+                ctx.font = 'bold 24px Inter, sans-serif';
+                const labelWidth = ctx.measureText(label).width;
+                
+                // Label background
+                ctx.fillRect(x1, y1 - 35, labelWidth + 10, 35);
+                ctx.fillStyle = 'white';
+                ctx.fillText(label, x1 + 5, y1 - 10);
             });
         }
 
